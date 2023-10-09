@@ -3,18 +3,23 @@
 
 __all__ = ["CascadeForestClassifier", "CascadeForestRegressor"]
 
-import numbers
+import numbers # 是Python的标准库之一，它定义了数字抽象基类，例如Number。在本例中，它可能被用于检查数据类型是否为数字。
 import time
-from abc import ABCMeta, abstractmethod
+
+# 它们用于创建抽象基类和抽象方法，用于定义类的接口和继承关系。在本例中，它们可能被用于创建自定义的抽象类和方法。
+from abc import ABCMeta, abstractmethod #
 
 import numpy as np
 from sklearn.base import (
-    BaseEstimator,
+    BaseEstimator, # 是scikit-learn库中的一个基类，用于创建估计器（estimator）的基本接口。估计器是用于拟合和预测的机器学习模型的通用术语
+
+    # 这两个类是scikit-learn库中的基类，用于创建分类器和回归器的估计器。它们提供了估计器的通用方法和属性，例如fit（拟合）、predict（预测）等。
     ClassifierMixin,
     RegressorMixin,
-    is_classifier,
+
+    is_classifier, # 是scikit-learn库中的一个函数，用于检查一个估计器是否是分类器。它通常用于判断估计器的类型。
 )
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder # 用于将类别标签编码为整数。它在处理分类问题时常用于将类别标签转换为模型可以处理的形式。
 from sklearn.utils import check_array, check_X_y
 from sklearn.utils.multiclass import type_of_target
 
@@ -27,6 +32,8 @@ from ._layer import (
 )
 
 
+# 应该**kwars是自己提供的一个字典，用于用户向函数传递参数的，如果用户没有提供这个参数，那么就使用默认的参数。
+# 该函数的意思可能是用户给了参数，就用用户给的，否则使用默认的参数。
 def _get_predictor_kwargs(predictor_kwargs, **kwargs) -> dict:
     """Overwrites default args if predictor_kwargs is supplied."""
     for key, value in kwargs.items():
@@ -48,7 +55,7 @@ def _build_classifier_predictor(
     predictor_kwargs={},
 ):
     """Build the predictor concatenated to the deep forest."""
-    predictor_name = predictor_name.lower()
+    predictor_name = predictor_name.lower()# 将字符串中所有大写字符转换为小写字符
 
     # Random Forest
     if predictor_name == "forest":
@@ -227,7 +234,7 @@ __classifier_model_doc = """
     max_layers : :obj:`int`, default=20
         The maximum number of cascade layers in the deep forest. Notice that
         the actual number of layers can be smaller than ``max_layers`` because
-        of the internal early stopping stage.
+        of the internal early stopping stage.   
     criterion : :obj:`{"gini", "entropy"}`, default= :obj:`"gini"`
         The function to measure the quality of a split. Supported criteria 
         are ``gini`` for the Gini impurity and ``entropy`` for the information 
