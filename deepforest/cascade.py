@@ -23,7 +23,7 @@ from sklearn.preprocessing import LabelEncoder # 用于将类别标签编码为�
 from sklearn.utils import check_array, check_X_y
 from sklearn.utils.multiclass import type_of_target
 
-from . import _io, _utils
+from . import _io, _utils # _io可能是用来缓冲的，将数据和模型存到磁盘中
 from ._binner import Binner
 from ._layer import (
     ClassificationCascadeLayer,
@@ -661,11 +661,11 @@ class BaseCascadeForest(BaseEstimator, metaclass=ABCMeta):
     def _check_input(self, X, y=None):
         """
         Check the input data and set the attributes if X is training data."""
-        is_training_data = y is not None
+        is_training_data = y is not None # 根据y非空来判断是训练集
 
         if is_training_data:
-            _, self.n_features_ = X.shape
-            self.n_outputs_ = self._get_n_output(y)
+            _, self.n_features_ = X.shape # 只取特征数
+            self.n_outputs_ = self._get_n_output(y) 
 
     def _validate_params(self):
         """
