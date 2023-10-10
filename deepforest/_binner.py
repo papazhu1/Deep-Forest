@@ -8,6 +8,8 @@ This class is modified from:
 
 __all__ = ["Binner"]
 
+# 应该是给特征的取值分箱
+
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_random_state, check_array
@@ -16,10 +18,11 @@ from . import _cutils as _LIB
 
 
 X_DTYPE = np.float64
-X_BINNED_DTYPE = np.uint8
-ALMOST_INF = 1e300
+X_BINNED_DTYPE = np.uint8 # unsigned integer 8 bits 无符号8位整数
+ALMOST_INF = 1e300 # 远远超出了宇宙的原子数量1e80
 
 
+# 对每列数据分箱，返回每个箱子的阈值，有两种方法：百分位分箱法和等长间隔分箱法
 def _find_binning_thresholds_per_feature(
     col_data, n_bins, bin_type="percentile"
 ):
@@ -35,27 +38,30 @@ def _find_binning_thresholds_per_feature(
         )
         raise RuntimeError(msg.format(len(col_data.shape)))
 
-    missing_mask = np.isnan(col_data)
+    missing_mask = np.isnan(col_data) # 判断每个值是否是NAN，返回一个布尔数组
     if missing_mask.any():
-        col_data = col_data[~missing_mask]
-    col_data = np.ascontiguousarray(col_data, dtype=X_DTYPE)
+        col_data = col_data[~missing_mask] # 从原始的 col_data 数组中提取出所有不是缺失值的元素
+    col_data = np.ascontiguousarray(col_data, dtype=X_DTYPE) # 将数组转换为连续的内存块
     distinct_values = np.unique(col_data)
     # Too few distinct values
-    if len(distinct_values) <= n_bins:
+
+    # 举个例子[1, 2, 3, 4]，如果n_bins=5
+    # 按照下面的代码给他分为[1.5, 2.5, 3.5]
+    if len(distinct_values) <= n_bins: 
         midpoints = distinct_values[:-1] + distinct_values[1:]
         midpoints *= 0.5
     else:
         # Equal interval in terms of percentile
-        if bin_type == "percentile":
-            percentiles = np.linspace(0, 100, num=n_bins + 1)
-            percentiles = percentiles[1:-1]
+        if bin_type == "percentile": # 用分位数来分箱
+            percentiles = np.linspace(0, 100, num=n_bins + 1) # 是包括100的，共n_bins+1个数
+            percentiles = percentiles[1:-1] # 去掉最后一个100
             midpoints = np.percentile(
                 col_data, percentiles, interpolation="midpoint"
             ).astype(X_DTYPE)
             assert midpoints.shape[0] == n_bins - 1
             np.clip(midpoints, a_min=None, a_max=ALMOST_INF, out=midpoints)
         # Equal interval in terms of value
-        elif bin_type == "interval":
+        elif bin_type == "interval": # 用等长间隔来分箱
             min_value, max_value = np.min(col_data), np.max(col_data)
             intervals = np.linspace(min_value, max_value, num=n_bins + 1)
             midpoints = intervals[1:-1]
@@ -70,11 +76,11 @@ def _find_binning_thresholds(
     X, n_bins, bin_subsample=2e5, bin_type="percentile", random_state=None
 ):
     n_samples, n_features = X.shape
-    rng = check_random_state(random_state)
+    rng = check_random_state(random_state) # 传入整数代表使用这个固定的随机数生成器，传入None代表使用随机的随机数生成器
 
     if n_samples > bin_subsample:
-        subset = rng.choice(np.arange(n_samples), bin_subsample, replace=False)
-        X = X.take(subset, axis=0)
+        subset = rng.choice(np.arange(n_samples), bin_subsample, replace=False) # replace=False代表不放回抽样
+        X = X.take(subset, axis=0) # 从原始数据 X 中取出相应的子样本
 
     binning_thresholds = []
     for f_idx in range(n_features):
