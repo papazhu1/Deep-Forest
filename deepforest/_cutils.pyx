@@ -9,9 +9,8 @@ cimport cython
 import numpy as np
 cimport numpy as np
 from libc.math cimport isnan
-
 ctypedef np.npy_bool BOOL
-ctypedef np.npy_intp SIZE_t
+ctypedef np.npy_intp SIZE_t # 是整数的指针吧
 ctypedef np.npy_int32 INT32_t
 ctypedef np.npy_float64 X_DTYPE_C
 ctypedef np.npy_uint8 X_BINNED_DTYPE_C
@@ -19,6 +18,7 @@ ctypedef np.npy_uint8 X_BINNED_DTYPE_C
 np.import_array()
 
 
+# 对多个类向量进行取平均值
 cpdef void _c_merge_proba(np.ndarray[X_DTYPE_C, ndim=2] probas,
                           SIZE_t n_outputs,
                           np.ndarray[X_DTYPE_C, ndim=2] out):
@@ -28,6 +28,9 @@ cpdef void _c_merge_proba(np.ndarray[X_DTYPE_C, ndim=2] probas,
         SIZE_t count = 0
 
     while start < n_features:
+
+        # 这里probas应该是一个二维数组，行暂时不懂是什么，
+        # 每n_outputs列是一个类向量，将类向量相加取平均值
         out += probas[:, start : (start + n_outputs)]
         start += n_outputs
         count += 1
@@ -35,17 +38,18 @@ cpdef void _c_merge_proba(np.ndarray[X_DTYPE_C, ndim=2] probas,
     out /= count
 
 
+# indices存被选中的样本序号，根据indices对样本生成掩码
 cpdef np.ndarray _c_sample_mask(const INT32_t [:] indices,
                                 int n_samples):
     """
     Generate the sample mask given indices without resorting to `np.unique`."""
     cdef:
         SIZE_t i
-        SIZE_t n = indices.shape[0]
+        SIZE_t n = indices.shape[0] # indices为选中的样本序号，不等于总共的样本数
         SIZE_t sample_id
         np.ndarray[BOOL, ndim=1] sample_mask = np.zeros((n_samples,),
                                                         dtype=np.bool)
-
+    # 这是一个 Cython 的语句块，表示下面的代码将在没有全局解释器锁（GIL）的情况下运行，以提高并行性能。
     with nogil:
         for i in range(n):
             sample_id = indices[i]
@@ -54,7 +58,7 @@ cpdef np.ndarray _c_sample_mask(const INT32_t [:] indices,
 
     return sample_mask
 
-
+# 对所有特征分桶
 # Modified from HGBDT in Scikit-Learn
 cpdef _map_to_bins(object X,
                    list binning_thresholds,
@@ -77,6 +81,7 @@ cpdef _map_to_bins(object X,
         SIZE_t n_features = X.shape[1]
         SIZE_t feature_idx
 
+    # 对每列调用_map_num_col_to_bins函数进行分桶
     for feature_idx in range(n_features):
         _map_num_col_to_bins(X_ndarray[:, feature_idx],
                              binning_thresholds[feature_idx],
@@ -84,6 +89,8 @@ cpdef _map_to_bins(object X,
                              binned[:, feature_idx])
 
 
+# 该函数给每个样本的某个特征分桶，解果保存在binned数组中
+# binned保存了每个样本的特征值对应的bin序号，如果是缺失值则为missing_values_bin_idx
 cdef void _map_num_col_to_bins(const X_DTYPE_C [:] data,
                                const X_DTYPE_C [:] binning_thresholds,
                                const unsigned char missing_values_bin_idx,
