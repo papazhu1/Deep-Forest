@@ -71,7 +71,7 @@ def _find_binning_thresholds_per_feature(
 
     return midpoints
 
-
+# 对样本集的特征找出分箱阈值
 def _find_binning_thresholds(
     X, n_bins, bin_subsample=2e5, bin_type="percentile", random_state=None
 ):
@@ -91,7 +91,7 @@ def _find_binning_thresholds(
 
     return binning_thresholds
 
-
+# 分箱类
 class Binner(TransformerMixin, BaseEstimator):
     def __init__(
         self,
@@ -169,8 +169,12 @@ class Binner(TransformerMixin, BaseEstimator):
             )
 
         X = check_array(X, dtype=X_DTYPE, force_all_finite=False)
+
+        # X_binned 表示每个特征的每个值所属的箱子的编号
         X_binned = np.zeros_like(X, dtype=X_BINNED_DTYPE, order="F")
 
+        # 进行分箱操作，将每个特征的每个值所属的箱子的编号存储到 X_binned 中
+        # _LIB是pyx文件，采用编译好的C代码，能够加速运行
         _LIB._map_to_bins(
             X, self.bin_thresholds_, self.missing_values_bin_idx_, X_binned
         )
