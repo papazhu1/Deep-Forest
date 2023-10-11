@@ -826,6 +826,7 @@ class BaseCascadeForest(BaseEstimator, metaclass=ABCMeta):
             random_state=self.random_state,
         )
 
+        # 将训练集分箱后加入缓存中，然后从缓存中映射
         # Bin the training data
         X_train_ = self._bin_data(binner_, X, is_training_data=True)
         X_train_ = self.buffer_.cache_data(0, X_train_, is_training_data=True)
