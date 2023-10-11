@@ -38,7 +38,7 @@ cpdef void _c_merge_proba(np.ndarray[X_DTYPE_C, ndim=2] probas,
     out /= count
 
 
-# indices存被选中的样本序号，根据indices对样本生成掩码
+# 根据indices对样本生成掩码,indices存被选中的样本序号
 cpdef np.ndarray _c_sample_mask(const INT32_t [:] indices,
                                 int n_samples):
     """
