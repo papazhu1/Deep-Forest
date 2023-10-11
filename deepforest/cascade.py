@@ -42,6 +42,8 @@ def _get_predictor_kwargs(predictor_kwargs, **kwargs) -> dict:
     return predictor_kwargs
 
 
+# 从randomForest、xgboost、lightgbm中选择一个作为分类predictor
+# 也就是初始化一个predictor类
 def _build_classifier_predictor(
     predictor_name,
     criterion,
@@ -84,6 +86,8 @@ def _build_classifier_predictor(
             )
             raise ModuleNotFoundError(msg)
 
+        # hist：这是一种基于直方图的方法，它将数据划分成多个直方图桶，并在这些桶上进行分裂。
+        # 能够比exact更快地训练模型，但是会导致模型的准确率下降。
         # The argument `tree_method` is always set as `hist` for XGBoost,
         # because the exact mode of XGBoost is too slow.
         objective = "multi:softmax" if n_outputs > 2 else "binary:logistic"
@@ -128,6 +132,8 @@ def _build_classifier_predictor(
     return predictor
 
 
+# 从randomForest、xgboost、lightgbm中选择一个作为回归predictor
+# 也就是初始化一个predictor类
 def _build_regressor_predictor(
     predictor_name,
     criterion,
@@ -170,6 +176,8 @@ def _build_regressor_predictor(
             )
             raise ModuleNotFoundError(msg)
 
+        # hist：这是一种基于直方图的方法，它将数据划分成多个直方图桶，并在这些桶上进行分裂。
+        # 能够比exact更快地训练模型，但是会导致模型的准确率下降。
         # The argument `tree_method` is always set as `hist` for XGBoost,
         # because the exact mode of XGBoost is too slow.
         objective = "reg:squarederror"
@@ -481,7 +489,7 @@ def deepforest_model_doc(header, item):
 
         return __doc[item]
 
-    def adddoc(cls):
+    def adddoc(cls): # 这表明了函数可以嵌套
         doc = [header + "\n\n"]
         doc.extend(get_doc(item))
         cls.__doc__ = "".join(doc)
@@ -555,9 +563,9 @@ class BaseCascadeForest(BaseEstimator, metaclass=ABCMeta):
     def _get_n_output(self, y):
         """Return the number of output inferred from the training labels."""
         if is_classifier(self):
-            n_output = np.unique(y).shape[0]  # classification
+            n_output = np.unique(y).shape[0]  # 找出label类型数，应该是给类向量用
             return n_output
-        return y.shape[1] if len(y.shape) > 1 else 1  # regression
+        return y.shape[1] if len(y.shape) > 1 else 1  # 回归类型的n_outputs直接返回label的列数
 
     def _make_layer(self, **layer_args):
         """Make and configure a cascade layer."""
@@ -1336,7 +1344,7 @@ class BaseCascadeForest(BaseEstimator, metaclass=ABCMeta):
         if self.partial_mode:
             self.buffer_.close()
 
-
+# 这是表示CascadeForestClassifier使用了deepforest_model_doc装饰器
 @deepforest_model_doc(
     """Implementation of the deep forest for classification.""",
     "classifier_model",
