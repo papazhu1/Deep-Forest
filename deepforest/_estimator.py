@@ -31,7 +31,9 @@ def make_classifier_estimator(
 ):
     # RandomForestClassifier
     if name == "rf":
+        # backend是指用的是自己写的还是sklearn的，自己写的调用forest.py里的包
         if backend == "custom":
+            # 所以一个estimator就是一个随机森林分类器或回归器
             estimator = RandomForestClassifier(
                 criterion=criterion,
                 n_estimators=n_trees,
@@ -192,9 +194,11 @@ class Estimator(object):
                 random_state,
             )
 
+    # 袋外数据估计器
     @property
     def oob_decision_function_(self):
         # Scikit-Learn uses `oob_prediction_` for ForestRegressor
+        # 表示使用的是sklearn中的随机森林回归器
         if self.backend == "sklearn" and not self.is_classifier:
             oob_prediction = self.estimator_.oob_prediction_
             if len(oob_prediction.shape) == 1:
@@ -202,6 +206,7 @@ class Estimator(object):
             return oob_prediction
         return self.estimator_.oob_decision_function_
 
+    # 计算森林的特征重要性
     @property
     def feature_importances_(self):
         """Return the impurity-based feature importances from the estimator."""
@@ -212,12 +217,16 @@ class Estimator(object):
         self.estimator_.fit(X, y, sample_weight)
         return self.oob_decision_function_
 
+    # 输出单个森林对样本集的 二维类概率向量数组 ，而不是概率最高的类
     def transform(self, X):
         """Preserved for the naming consistency."""
         return self.predict(X)
 
+
+    # 输出单个森林对样本集的 二维类概率向量数组
     def predict(self, X):
         if self.is_classifier:
+            # 返回的是一个二维数组，每行是一个样本的类概率向量
             return self.estimator_.predict_proba(X)
         pred = self.estimator_.predict(X)
         if len(pred.shape) == 1:
