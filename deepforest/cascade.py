@@ -570,7 +570,7 @@ class BaseCascadeForest(BaseEstimator, metaclass=ABCMeta):
             return n_output
         return y.shape[1] if len(y.shape) > 1 else 1  # 回归类型的n_outputs直接返回label的列数
 
-    #
+    # 根据默认方式或者是个性化方式构建新的一层
     def _make_layer(self, **layer_args):
         """Make and configure a cascade layer."""
         if not hasattr(self, "use_custom_estimator"):
@@ -743,6 +743,7 @@ class BaseCascadeForest(BaseEstimator, metaclass=ABCMeta):
 
         return X_binned
 
+    # 如果在能忍受的几层内效果都没有提升，那么就删除这几层，用尽可能少且精度不降的层数
     def _handle_early_stopping(self):
         """
         Remove cascade layers temporarily added, along with dumped objects on
@@ -787,6 +788,8 @@ class BaseCascadeForest(BaseEstimator, metaclass=ABCMeta):
         returned. For regression, the predicted value based on X is returned.
         """
 
+    # 求增强特征向量的长度
+    # @property表示该函数可以像访问属性一样来访问该方法，目的是隐藏该属性的实现细节
     @property
     def n_aug_features_(self):
         if not hasattr(self, "use_custom_estimator"):
@@ -795,6 +798,13 @@ class BaseCascadeForest(BaseEstimator, metaclass=ABCMeta):
             return self.n_estimators * self.n_outputs_
 
     # flake8: noqa: E501
+    # >>> type_of_target(np.array([[1, 2], [3, 1]]))
+    # 'multiclass-multioutput'
+    # >>> type_of_target(np.array([[0, 1], [1, 1]]))
+    # 'multilabel-indicator'
+    # >>> type_of_target(np.array([[1.5, 2.0], [3.0, 1.6]]))
+    # 'continuous-multioutput'
+    # multioutput是多输出类型，每次预测一定要输出两个值，是每次预测两个指标
     def fit(self, X, y, sample_weight=None):
         X, y = check_X_y(
             X,
