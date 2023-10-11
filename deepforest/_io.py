@@ -257,6 +257,7 @@ class Buffer(object):
             warnings.warn(msg, RuntimeWarning)
 
 
+# 为模型的存储创建一个文件夹
 def model_mkdir(dirname):
     """Make the directory for saving the model."""
     if os.path.isdir(dirname):
@@ -267,6 +268,7 @@ def model_mkdir(dirname):
     os.mkdir(os.path.join(dirname, "estimator"))
 
 
+# 这里应该就是保存训练好的模型，所以与训练数据没什么关系
 def model_saveobj(dirname, obj_type, obj, partial_mode=False):
     """Save objects of the deep forest according to the specified type."""
 
@@ -274,6 +276,7 @@ def model_saveobj(dirname, obj_type, obj, partial_mode=False):
         msg = "Cannot find the target directory: {}. Please create it first."
         raise RuntimeError(msg.format(dirname))
 
+    # 保存参数和binner，不需要查看partial_mode，直接就保存在pkl文件中了
     if obj_type in ("param", "binner"):
         if not isinstance(obj, dict):
             msg = "{} to be saved should be in the form of dict."
@@ -293,6 +296,7 @@ def model_saveobj(dirname, obj_type, obj, partial_mode=False):
         # If `partial_mode` is True, each base estimator in the model is the
         # path to the dumped estimator, and we only need to move it to the
         # target directory.
+        # 意思就是：如果partial_mode为True，那么estimator就是一个路径，直接移动到目标文件夹就行了
         if partial_mode:
             for _, layer in obj.items():
                 for estimator_key, estimator in layer.estimators_.items():
