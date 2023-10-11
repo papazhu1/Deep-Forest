@@ -49,6 +49,7 @@ from .tree._tree import DOUBLE
 MAX_INT = np.iinfo(np.int32).max
 
 
+# 获得每次自助法抽样的样本数
 def _get_n_samples_bootstrap(n_samples, max_samples):
     """
     Get the number of samples in a bootstrap sample.
@@ -87,7 +88,7 @@ def _get_n_samples_bootstrap(n_samples, max_samples):
     msg = "`max_samples` should be int or float, but got type '{}'"
     raise TypeError(msg.format(type(max_samples)))
 
-
+# 根据总数和要抽数来生成掩码
 def _generate_sample_mask(random_state, n_samples, n_samples_bootstrap):
     """Private function used to _parallel_build_trees function."""
 
