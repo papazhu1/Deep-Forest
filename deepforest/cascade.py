@@ -497,7 +497,7 @@ def deepforest_model_doc(header, item):
 
     return adddoc
 
-
+# 通过将 ABCMeta 指定为元类，BaseCascadeForest 类变成了一个抽象基类，要求其子类实现特定的抽象方法。
 class BaseCascadeForest(BaseEstimator, metaclass=ABCMeta):
     def __init__(
         self,
@@ -554,12 +554,15 @@ class BaseCascadeForest(BaseEstimator, metaclass=ABCMeta):
         self.use_predictor = use_predictor
         self.predictor = predictor
 
+    # 查看深度森林现在有几层
     def __len__(self):
         return self.n_layers_
 
+    # 通过索引获取深度森林的某一层
     def __getitem__(self, index):
         return self._get_layer(index)
 
+    # 计算n_outputs值，离散的值通过找出label的取值数
     def _get_n_output(self, y):
         """Return the number of output inferred from the training labels."""
         if is_classifier(self):
@@ -567,6 +570,7 @@ class BaseCascadeForest(BaseEstimator, metaclass=ABCMeta):
             return n_output
         return y.shape[1] if len(y.shape) > 1 else 1  # 回归类型的n_outputs直接返回label的列数
 
+    #
     def _make_layer(self, **layer_args):
         """Make and configure a cascade layer."""
         if not hasattr(self, "use_custom_estimator"):
@@ -575,7 +579,7 @@ class BaseCascadeForest(BaseEstimator, metaclass=ABCMeta):
                 layer = ClassificationCascadeLayer(**layer_args)
             else:
                 layer = RegressionCascadeLayer(**layer_args)
-        else:
+        else: # 个性化的cascade layer，应该只要有传入参数就是定制个性化的级联层吧
             # Use customized cascade layers
             layer = CustomCascadeLayer(
                 layer_args["layer_idx"],
@@ -591,6 +595,7 @@ class BaseCascadeForest(BaseEstimator, metaclass=ABCMeta):
 
         return layer
 
+    # 通过索引从字典中获取某一层
     def _get_layer(self, layer_idx):
         """Get the layer from the internal container according to the index."""
         if not 0 <= layer_idx < self.n_layers_:
@@ -604,6 +609,7 @@ class BaseCascadeForest(BaseEstimator, metaclass=ABCMeta):
 
         return self.layers_[layer_key]
 
+    # 通过索引修改某一层的结构
     def _set_layer(self, layer_idx, layer):
         """
         Register a layer into the internal container with the given index."""
@@ -617,6 +623,7 @@ class BaseCascadeForest(BaseEstimator, metaclass=ABCMeta):
 
         self.layers_.update({layer_key: layer})
 
+    # 获取某一层的binner，所以是每层分一次箱
     def _get_binner(self, binner_idx):
         """Get the binner from the internal container with the given index."""
         if not 0 <= binner_idx <= self.n_layers_:
@@ -630,6 +637,7 @@ class BaseCascadeForest(BaseEstimator, metaclass=ABCMeta):
 
         return self.binners_[binner_key]
 
+    # 通过索引修改某一层的binner
     def _set_binner(self, binner_idx, binner):
         """
         Register a binner into the internal container with the given index."""
@@ -643,6 +651,7 @@ class BaseCascadeForest(BaseEstimator, metaclass=ABCMeta):
 
         self.binners_.update({binner_key: binner})
 
+    # 根据n_trees和当前的层数来设置每一个森林的树的数量，或者自定义每个森林中数的数量
     def _set_n_trees(self, layer_idx):
         """
         Set the number of decision trees for each estimator in the cascade
@@ -666,6 +675,7 @@ class BaseCascadeForest(BaseEstimator, metaclass=ABCMeta):
             )
             raise ValueError(msg)
 
+    # 判断是否是训练集，如果是训练集的话，计算n_features和n_outputs
     def _check_input(self, X, y=None):
         """
         Check the input data and set the attributes if X is training data."""
@@ -675,6 +685,7 @@ class BaseCascadeForest(BaseEstimator, metaclass=ABCMeta):
             _, self.n_features_ = X.shape # 只取特征数
             self.n_outputs_ = self._get_n_output(y) 
 
+    # 验证传给BaseCascadeForest的参数是否合法
     def _validate_params(self):
         """
         Validate parameters, those passed to the sub-modules will not be
@@ -699,6 +710,8 @@ class BaseCascadeForest(BaseEstimator, metaclass=ABCMeta):
             msg = "delta = {} should be no smaller than 0."
             raise ValueError(msg.format(self.delta))
 
+    # 为什么binner有fit_transform合起来的方法
+    # 对这一层的数据进行分箱，因为每一层的训练数据是一样的，只是可能样本集和特征集不一样
     def _bin_data(self, binner, X, is_training_data=True):
         """
         Bin data X. If X is training data, the bin mapper is fitted first."""
@@ -758,9 +771,10 @@ class BaseCascadeForest(BaseEstimator, metaclass=ABCMeta):
         """
         Return true if new validation result is better than previous"""
         if is_classifier(self):
-            return new_pivot >= pivot + delta
-        return new_pivot <= pivot - delta
+            return new_pivot >= pivot + delta # 分类器是精度越大越好
+        return new_pivot <= pivot - delta # 回归器是误差越小越好
 
+    # 如果是抽象类方法，那么子类必须实现这个方法
     @abstractmethod
     def _repr_performance(self, pivot):
         """Format the printting information on training performance."""
