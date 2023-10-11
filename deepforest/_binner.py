@@ -91,7 +91,7 @@ def _find_binning_thresholds(
 
     return binning_thresholds
 
-# 分箱类
+# 分箱类，TransformerMixin可以将fit和transform方法转换为fit_transform方法
 class Binner(TransformerMixin, BaseEstimator):
     def __init__(
         self,
