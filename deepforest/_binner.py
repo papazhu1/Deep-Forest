@@ -47,7 +47,7 @@ def _find_binning_thresholds_per_feature(
     # 这里是样本数小于等于箱子数的情况，直接将每个样本作为一个箱子，且最终数量英爱也没有达到n_bins的要求数
     # 举个例子[1, 2, 3, 4]，如果n_bins=5
     # 按照下面的代码给他分为[1.5, 2.5, 3.5]
-    if len(distinct_values) <= n_bins: 
+    if len(distinct_values) <= n_bins:
         midpoints = distinct_values[:-1] + distinct_values[1:]
         midpoints *= 0.5
     else:
@@ -168,13 +168,10 @@ class Binner(TransformerMixin, BaseEstimator):
                 msg.format(self.n_bins_non_missing_.shape[0], X.shape[1])
             )
 
-<<<<<<< HEAD
         X = check_array(X, dtype=X_DTYPE, force_all_finite=False)
 
         # X_binned 表示每个特征的每个值所属的箱子的编号
-=======
         X = check_array(X, dtype=X_DTYPE, force_all_finite=False) # 经过check_array之后，X为array类型， force_all_finite=False代表允许有缺失值和无穷大值
->>>>>>> bc0534fd7646c705cb903b33cc9a2a578c9917f2
         X_binned = np.zeros_like(X, dtype=X_BINNED_DTYPE, order="F")
 
         # 进行分箱操作，将每个特征的每个值所属的箱子的编号存储到 X_binned 中
