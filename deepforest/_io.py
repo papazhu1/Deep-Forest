@@ -34,6 +34,7 @@ class Buffer(object):
         Whether to cache the intermediate data to the local buffer.
     """
 
+    # Buffer类的init函数，创建了所需要的buffer存储文件夹
     def __init__(
         self,
         use_buffer,
@@ -43,29 +44,35 @@ class Buffer(object):
         store_data=False,
     ):
 
+        # 共三种东西可以存到buffer中，分别是estimator，predictor，data
         self.use_buffer = use_buffer
         self.store_est = store_est and use_buffer
         self.store_pred = store_pred and use_buffer
         self.store_data = store_data and use_buffer
         self.buffer_dir = os.getcwd() if buffer_dir is None else buffer_dir
 
+        # tempfile.TemporaryDirectory()创建一个临时目录，当程序结束时，该目录及其内容将被自动删除
+        # 这里的参数dir代表将要创建的文件的副目录，存放在工作目录里
         # Create buffer
         if self.use_buffer:
             self.buffer = tempfile.TemporaryDirectory(
                 prefix="buffer_", dir=self.buffer_dir
             )
 
+            # 如果需要存储数据，那么就在buffer文件夹中创建一个data_开头的文件夹
             if store_data:
                 self.data_dir_ = tempfile.mkdtemp(
                     prefix="data_", dir=self.buffer.name
                 )
 
+            # 如果需要存储estimator或predictor那么就在buffer文件夹中创建一个model_开头的文件夹
             if store_est or store_pred:
                 self.model_dir_ = tempfile.mkdtemp(
                     prefix="model_", dir=self.buffer.name
                 )
                 self.pred_dir_ = os.path.join(self.model_dir_, "predictor.est")
 
+    # 用于返回buffer的名字，而这个名字应该在tempfile.TemporaryDirectory()这个函数中会生成吧
     @property
     def name(self):
         """Return the buffer name."""
@@ -74,6 +81,7 @@ class Buffer(object):
         else:
             return None
 
+
     def cache_data(self, layer_idx, X, is_training_data=True):
         """
         When ``X`` is a large array, it is not recommended to directly pass the
@@ -81,6 +89,9 @@ class Buffer(object):
         times and cause extra overheads. Instead, dumping the array to the
         local buffer and reading it as the ``numpy.memmap`` mode across
         processors is able to speed up the training and evaluating process.
+
+        就是说并行生成estimator的时候会将样本复制很多份给每个processor，这样会造成很大的开销
+        将数据先存入本地缓冲区再进行内存映射就很高效
 
         Parameters
         ----------
@@ -102,10 +113,13 @@ class Buffer(object):
         if not self.store_data:
             return X
 
+        # 给该层的数据创建一个缓冲区，区分训练数据和测试数据
         if is_training_data:
             cache_dir = os.path.join(
                 self.data_dir_, "joblib_train_{}.mmap".format(layer_idx)
             )
+            # 如果当前目录下已经存在该数据文件了，则需要删除它
+            # 通过操作系统中的解除链接关系，如果链接数为0，则删除该文件
             # Delete
             if os.path.exists(cache_dir):
                 os.unlink(cache_dir)
@@ -117,8 +131,12 @@ class Buffer(object):
             if os.path.exists(cache_dir):
                 os.unlink(cache_dir)
 
+        # 将数据存放在.mmap文件中，这是一个内存映射文件
         # Dump and reload data in the numpy.memmap mode
         dump(X, cache_dir)
+
+        # 对于数据，返回的应该是存在这个文件中的对象
+        # 而estimator和predictor返回的是文件的路径
         X_mmap = load(cache_dir, mmap_mode="r+")
 
         return X_mmap
@@ -160,6 +178,7 @@ class Buffer(object):
         cache_dir = os.path.join(self.model_dir_, filename)
         dump(est, cache_dir)
 
+        # 对于存储的estimator，返回的应该是存储的路径，所有后面还有load函数
         return cache_dir
 
     def cache_predictor(self, predictor):
@@ -184,6 +203,7 @@ class Buffer(object):
 
         dump(predictor, self.pred_dir_)
 
+        # 对于存储的predictor，返回的应该是存储的路径，所有后面还有load函数
         return self.pred_dir_
 
     def load_estimator(self, estimator_path):
@@ -191,6 +211,7 @@ class Buffer(object):
             msg = "Missing estimator in the path: {}."
             raise FileNotFoundError(msg.format(estimator_path))
 
+        # load函数返回任意python的对象，这里返回的应该是estimator
         estimator = load(estimator_path)
 
         return estimator
@@ -206,6 +227,7 @@ class Buffer(object):
             msg = "Missing predictor in the path: {}."
             raise FileNotFoundError(msg.format(predictor))
 
+        # load函数返回任意python的对象，这里返回的应该是predictor
         predictor = load(predictor)
 
         return predictor
@@ -214,6 +236,8 @@ class Buffer(object):
         """Used for the early stopping stage in deep forest."""
         for est_name in os.listdir(self.model_dir_):
             if est_name.startswith(str(layer_idx)):
+
+                # 直接删掉这些estimator的映射文件
                 try:
                     os.unlink(os.path.join(self.model_dir_, est_name))
                 except OSError:
@@ -223,6 +247,7 @@ class Buffer(object):
                     )
                     warnings.warn(msg, RuntimeWarning)
 
+    # 删除buffer下的所有临时文件
     def close(self):
         """Clean up the buffer."""
         try:
