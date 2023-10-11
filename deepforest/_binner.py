@@ -43,8 +43,8 @@ def _find_binning_thresholds_per_feature(
         col_data = col_data[~missing_mask] # 从原始的 col_data 数组中提取出所有不是缺失值的元素
     col_data = np.ascontiguousarray(col_data, dtype=X_DTYPE) # 将数组转换为连续的内存块
     distinct_values = np.unique(col_data)
-    # Too few distinct values
 
+    # 这里是样本数小于等于箱子数的情况，直接将每个样本作为一个箱子，且最终数量英爱也没有达到n_bins的要求数
     # 举个例子[1, 2, 3, 4]，如果n_bins=5
     # 按照下面的代码给他分为[1.5, 2.5, 3.5]
     if len(distinct_values) <= n_bins: 
@@ -135,7 +135,7 @@ class Binner(TransformerMixin, BaseEstimator):
 
         self.bin_thresholds_ = _find_binning_thresholds(
             X,
-            self.n_bins - 1,
+            self.n_bins - 1, # 之前在初始化的时候把n_bins加了1，这里要减回去，因为多的一个箱子是给缺失值的，而这里的分箱是去除了缺失值的
             self.bin_subsample,
             self.bin_type,
             self.random_state,
@@ -159,7 +159,7 @@ class Binner(TransformerMixin, BaseEstimator):
             )
             raise RuntimeError(msg)
 
-        if not X.shape[1] == self.n_bins_non_missing_.shape[0]:
+        if not X.shape[1] == self.n_bins_non_missing_.shape[0]: # 这里判断如果样本的特征数和之前fit的时候的特征数不一致，就报错
             msg = (
                 "The binner was fitted with {} features but {} features got"
                 " passed to `transform`."
@@ -168,9 +168,13 @@ class Binner(TransformerMixin, BaseEstimator):
                 msg.format(self.n_bins_non_missing_.shape[0], X.shape[1])
             )
 
+<<<<<<< HEAD
         X = check_array(X, dtype=X_DTYPE, force_all_finite=False)
 
         # X_binned 表示每个特征的每个值所属的箱子的编号
+=======
+        X = check_array(X, dtype=X_DTYPE, force_all_finite=False) # 经过check_array之后，X为array类型， force_all_finite=False代表允许有缺失值和无穷大值
+>>>>>>> bc0534fd7646c705cb903b33cc9a2a578c9917f2
         X_binned = np.zeros_like(X, dtype=X_BINNED_DTYPE, order="F")
 
         # 进行分箱操作，将每个特征的每个值所属的箱子的编号存储到 X_binned 中
