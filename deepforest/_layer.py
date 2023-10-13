@@ -12,12 +12,13 @@ import numpy as np
 from sklearn.base import is_classifier
 from sklearn.metrics import accuracy_score, mean_squared_error
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
-
+from rich.progress import Progress
 from . import _utils
 from ._estimator import Estimator
 from .utils.kfoldwrapper import KFoldWrapper
+from rich.progress import Progress
 
-
+# 返回训练集X的增强向量和estimator的缓存路径
 def _build_estimator(
     X,
     y,
@@ -85,10 +86,12 @@ class BaseCascadeLayer(BaseEstimator):
         # Internal container
         self.estimators_ = {}
 
+    # 计算每层的树的数量
     @property
     def n_trees_(self):
         return self.n_estimators * self.n_trees
 
+    # 对该层的每个估计器（森林）的特征重要性求平均
     @property
     def feature_importances_(self):
         feature_importances_ = np.zeros((self.n_features,))
@@ -106,6 +109,8 @@ class BaseCascadeLayer(BaseEstimator):
     def _make_estimator(self, estimator_idx, estimator_name):
         """Make and configure a copy of the estimator."""
         # Set the non-overlapped random state
+
+        # 意思就是每个树的随机种子都是从不一样的地方开始的，但是有固定的公式来计算，只要初始randomState相同，那么后续的就都会按公式来
         if self.random_state is not None:
             random_state = (
                 self.random_state + 10 * estimator_idx + 100 * self.layer_idx
@@ -138,10 +143,12 @@ class BaseCascadeLayer(BaseEstimator):
             msg = "`n_trees` = {} should be strictly positive."
             raise ValueError(msg.format(self.n_trees))
 
+    # 计算出该层的所有森林的类概率向量
     def transform(self, X):
         """Preserved for the naming consistency."""
         return self.predict_full(X)
 
+    # 计算出该层的所有森林的类概率向量
     def predict_full(self, X):
         """Return the concatenated predictions from all base estimators."""
         n_samples, _ = X.shape
@@ -207,6 +214,9 @@ class ClassificationCascadeLayer(BaseCascadeLayer, ClassifierMixin):
         oob_decision_function = np.zeros((n_samples, self.n_outputs))
 
         # A random forest and an extremely random forest will be fitted
+        progress = Progress()
+        task1 = progress.add_task('[red]Downloading...', total=self.n_estimators)
+        progress.start()
         for estimator_idx in range(self.n_estimators // 2):
             X_aug_, _estimator = _build_estimator(
                 X,
@@ -224,6 +234,7 @@ class ClassificationCascadeLayer(BaseCascadeLayer, ClassifierMixin):
             X_aug.append(X_aug_)
             key = "{}-{}-{}".format(self.layer_idx, estimator_idx, "rf")
             self.estimators_.update({key: _estimator})
+            progress.update(task1, advance=1)
 
         for estimator_idx in range(self.n_estimators // 2):
             X_aug_, _estimator = _build_estimator(
@@ -242,6 +253,7 @@ class ClassificationCascadeLayer(BaseCascadeLayer, ClassifierMixin):
             X_aug.append(X_aug_)
             key = "{}-{}-{}".format(self.layer_idx, estimator_idx, "erf")
             self.estimators_.update({key: _estimator})
+            progress.update(task1, advance=1)
 
         # Set the OOB estimations and validation accuracy
         self.oob_decision_function_ = oob_decision_function / self.n_estimators
