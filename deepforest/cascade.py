@@ -1426,6 +1426,7 @@ class CascadeForestClassifier(BaseCascadeForest, ClassifierMixin):
         self.type_of_target_ = None
         self.label_encoder_ = None
 
+    # 将类标签编码，编码后标签只是序号
     def _encode_class_labels(self, y):
         """
         Fit the internal label encoder and return encoded labels.
@@ -1445,6 +1446,7 @@ class CascadeForestClassifier(BaseCascadeForest, ClassifierMixin):
 
         return encoded_y
 
+    # 将类标签进行解码，返回原始的类标签名称
     def _decode_class_labels(self, y):
         """
         Transform the predicted labels back to original encoding.
@@ -1456,6 +1458,7 @@ class CascadeForestClassifier(BaseCascadeForest, ClassifierMixin):
 
         return decoded_y
 
+    # 展示级联层的性能
     def _repr_performance(self, pivot):
         msg = "Val Acc = {:.3f} %"
         return msg.format(pivot * 100)
@@ -1720,6 +1723,7 @@ class CascadeForestRegressor(BaseCascadeForest, RegressorMixin):
 
         for layer_idx in range(self.n_layers_):
             layer = self._get_layer(layer_idx)
+
 
             if self.verbose > 0:
                 msg = "{} Evaluating cascade layer = {:<2}"
