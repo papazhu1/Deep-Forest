@@ -16,7 +16,7 @@ from sklearn.ensemble import (
     RandomForestRegressor as sklearn_RandomForestRegressor,
     ExtraTreesRegressor as sklearn_ExtraTreesRegressor,
 )
-
+from rich.progress import Progress
 
 def make_classifier_estimator(
     name,
